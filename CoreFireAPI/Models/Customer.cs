@@ -1,10 +1,13 @@
-﻿using System;
+﻿using Newtonsoft.Json;
+
 namespace CoreFireAPI.Models
 {
     public class Customer
     {
-        public Customer()
-        {
-        }
+        [JsonIgnore]
+        public string Id { get; set; }
+        public string FirstName { get; set; }
+        public string LastName { get; set; }
+        public bool IsActive { get; set; }
     }
 }

@@ -1,8 +1,10 @@
 ﻿using System;
 using System.Collections.Generic;
+using System.Diagnostics;
 using System.Linq;
 using System.Threading.Tasks;
 using Microsoft.AspNetCore.Mvc;
+using Microsoft.Extensions.Configuration;
 
 namespace CoreFireAPI.Controllers
 {
@@ -10,11 +12,21 @@ namespace CoreFireAPI.Controllers
     [ApiController]
     public class ValuesController : ControllerBase
     {
+        private readonly IConfiguration Configuration;
+        private readonly string connectionString;
+
+        public ValuesController(IConfiguration configuration)
+        {
+            Configuration = configuration;
+            this.connectionString = Configuration.GetSection("ConnectionStrings:DefaultConnection").Value;
+        }
+
         // GET api/values
         [HttpGet]
         public ActionResult<IEnumerable<string>> Get()
         {
-            return new string[] { "value1", "value2" };
+            
+            return new string[] { "value1", "value2", this.connectionString };
         }
 
         // GET api/values/5

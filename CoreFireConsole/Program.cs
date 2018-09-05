@@ -18,7 +18,7 @@ namespace CoreFireConsole
             Console.WriteLine("Hello World!");
 
             Program.Run().Wait();
-            Configuration.GetConnectionString("RazorPagesMovieContext")
+            //Configuration.GetConnectionString("RazorPagesMovieContext")
             //var firebase = new FirebaseClient(“https://dinosaur-facts.firebaseio.com/");
             //var dinos = await firebase
             //   .Child(“dinosaurs”)
@@ -39,7 +39,8 @@ namespace CoreFireConsole
         {
             var connectionLink = "https://firecoretest.firebaseio.com/";
             var firebase = new FirebaseClient(connectionLink);
-            await firebase.Child("dinosaurs").PostAsync<Dinosaur>(new Dinosaur("Rex", 1.25));
+            var dinoNew = new Dinosaur("Rex", 1.25);
+            await firebase.Child("dinosaurs").PostAsync<Dinosaur>(dinoNew);
 
             var dinos = await firebase.Child("dinosaurs")
                               .OrderByKey()
