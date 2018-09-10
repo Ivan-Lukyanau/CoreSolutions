@@ -4,34 +4,32 @@ using System.Collections.Generic;
 using System.Diagnostics;
 using System.Linq;
 using System.Threading.Tasks;
+using CoreFireAPI.BLL;
 using CoreFireAPI.Controllers;
+using Microsoft.Extensions.Options;
+using Newtonsoft.Json;
 
 namespace CoreFireAPI.Models
 {
     public class NextMonthSchedule
     {
-        private IEnumerable<WorkingSchedule> _daysAndTimes;
-        //{
-        //    get => new List<WorkingSchedule>();
-        //    set
-        //    {
-        //        if (value != null)
-        //        {
-        //            _daysAndTimes = value;
-        //        }
-        //    }
-        //}
+        private IEnumerable<DaySchedule> _daysAndTimes;
+        private FirebaseDataService _fireDataService;
 
-        public IEnumerable<WorkingSchedule> DaysAndTimes => _daysAndTimes;
+        public IEnumerable<DaySchedule> DaysAndTimes => _daysAndTimes;
 
         public string[] WorkingDays { get; private set; }
 
-        public NextMonthSchedule(string[] workingDays)
+        public void SetupWorkingDays(string[] workingDays)
         {
             WorkingDays = workingDays;
-            _daysAndTimes = new List<WorkingSchedule>();
+            _daysAndTimes = new List<DaySchedule>();
         }
 
+        public NextMonthSchedule(FirebaseDataService fireDataService)
+        {
+            _fireDataService = fireDataService;
+        }
 
         public void AddStandardTimeslotsToEveryWorkingDay()
         {
@@ -40,17 +38,35 @@ namespace CoreFireAPI.Models
                 throw new ArgumentNullException();
             }
 
-            var listResult = new List<WorkingSchedule>();
+            var listResult = new List<DaySchedule>();
+            var standardTimeslots = this.GetStandardTimeslots().ToArray();
             foreach (var day in WorkingDays)
             {
-                listResult.Add(new WorkingSchedule()
+                listResult.Add(new DaySchedule()
                 {
                     Day = day,
-                    TimeSlots = Enumerable.Range(8, 12).ToArray()
-            });
+                    Timeslots = standardTimeslots
+                });
             }
 
             _daysAndTimes = listResult;
+        }
+
+        private IEnumerable<Timeslot> GetStandardTimeslots()
+        {
+            foreach(var i in Enumerable.Range(8, 12))
+            {
+                yield return new Timeslot(i, true);
+            }
+        }
+
+        public async Task SaveIntoFireStorage()
+        {
+            if (_fireDataService == null) // to fix tests only
+            {
+                _fireDataService = new FirebaseDataService("https://firecoretest.firebaseio.com/");
+            }
+            await _fireDataService.SendIntoFireDatabase(this.DaysAndTimes);
         }
     }
 }

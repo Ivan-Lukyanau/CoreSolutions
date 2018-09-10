@@ -2,6 +2,7 @@
 using System.Collections.Generic;
 using System.Linq;
 using System.Threading.Tasks;
+using CoreFireAPI.BLL;
 using CoreFireAPI.DAL;
 using CoreFireAPI.Models;
 using Microsoft.AspNetCore.Http;
@@ -15,10 +16,14 @@ namespace CoreFireAPI.Controllers
     public class CreatorController : ControllerBase
     {
         private readonly ICustomerRepository _customerRepo;
+        private readonly FirebaseDataService _firebaseDataService;
 
-        public CreatorController(ICustomerRepository customerRespository)
-        {
+        public CreatorController(
+            ICustomerRepository customerRespository,
+            FirebaseDataService firebaseDataService
+            ) {
             _customerRepo = customerRespository;
+            _firebaseDataService = firebaseDataService;
         }
 
         // GET: api/Creator
@@ -26,7 +31,6 @@ namespace CoreFireAPI.Controllers
         public async Task<IEnumerable<Customer>> Get()
         {
             return await _customerRepo.GetCustomers();
-            //return new string[] { "value1", "value2" };
         }
 
         // GET: api/Creator/5
@@ -38,9 +42,17 @@ namespace CoreFireAPI.Controllers
 
         // POST: api/Creator
         [HttpPost]
-        public async void Post([FromBody] Customer customer)
+        public async void Post([FromBody] Schedule workingDays)
         {
-            await _customerRepo.InsertCustomer(customer);
+            var scheduleForNextMonth = new NextMonthSchedule(_firebaseDataService);
+            scheduleForNextMonth.SetupWorkingDays(workingDays.WorkingDays);
+            scheduleForNextMonth.AddStandardTimeslotsToEveryWorkingDay();
+            await scheduleForNextMonth.SaveIntoFireStorage();
+        }
+
+        public class Schedule
+        {
+            public string[] WorkingDays { get; set; }
         }
 
         // PUT: api/Creator/5
