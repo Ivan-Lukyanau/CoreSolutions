@@ -39,26 +39,16 @@ namespace CoreFireAPI.Models
             }
 
             var listResult = new List<DaySchedule>();
-            var standardTimeslots = this.GetStandardTimeslots().ToArray();
+
             foreach (var day in WorkingDays)
             {
-                listResult.Add(new DaySchedule()
-                {
-                    Day = day,
-                    Timeslots = standardTimeslots
-                });
+                listResult.Add(new DaySchedule(day));
             }
 
             _daysAndTimes = listResult;
         }
 
-        private IEnumerable<Timeslot> GetStandardTimeslots()
-        {
-            foreach(var i in Enumerable.Range(8, 12))
-            {
-                yield return new Timeslot(i, true);
-            }
-        }
+
 
         public async Task SaveIntoFireStorage()
         {

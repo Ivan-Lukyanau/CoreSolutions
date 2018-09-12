@@ -1,4 +1,6 @@
-﻿namespace CoreFireAPI.Models
+﻿using System.Collections.Generic;
+
+namespace CoreFireAPI.Models
 {
     public class Timeslot
     {
@@ -11,4 +13,5 @@
             Time = time;
         }
     }
+
 }

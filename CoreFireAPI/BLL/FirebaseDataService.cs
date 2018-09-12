@@ -1,11 +1,15 @@
 ﻿using System;
 using System.Collections.Generic;
 using System.Linq;
+using System.Text;
 using System.Threading.Tasks;
 using CoreFireAPI.Models;
 using Firebase.Database;
 using Firebase.Database.Query;
 using Microsoft.Extensions.Options;
+using Newtonsoft.Json;
+using Newtonsoft.Json.Linq;
+using Newtonsoft.Json.Serialization;
 
 namespace CoreFireAPI.BLL
 {
@@ -17,10 +21,6 @@ namespace CoreFireAPI.BLL
         public FirebaseDataService(IOptions<FireConnection> fireConnection)
         {
             _connectionString = fireConnection.Value.DefaultConnection;
-
-            // CREATE OPTIONS HERE TO 
-            //_firebase = new FirebaseClient(_connectionString);
-
         }
 
         public FirebaseDataService(string fireConnection)
@@ -29,6 +29,7 @@ namespace CoreFireAPI.BLL
 
         }
 
+        // reinvent given the auth strategy in the future
         public async Task SendIntoFireDatabase(NextMonthSchedule schedule, string authToken)
         {
             if (authToken == null)
@@ -50,35 +51,97 @@ namespace CoreFireAPI.BLL
                 .PostAsync<NextMonthSchedule>(schedule);
         }
 
+        // deprecated
         public async Task SendIntoFireDatabase(IEnumerable<DaySchedule> monthSchedule)
         {
             _firebase = new FirebaseClient(_connectionString);
+            var monthScheduleSave = new MonthScheduleBase { Days = monthSchedule };
+            // just for Keys test
+            var insertionModel = monthScheduleSave.TransformIntoInsertObject();
 
-            var one = new DaySchedule();
-            one.Day = "2018-09-10";
-            one.Timeslots = new[]
-            {
-                new Timeslot(8, true),
-                new Timeslot(9, true),
-                new Timeslot(10, true)
-            };
-            var two = new DaySchedule();
-            two.Day = "2018-09-10";
-            two.Timeslots = new[]
-            {
-                new Timeslot(8, true),
-                new Timeslot(9, true),
-                new Timeslot(10, true)
-            };
-            var monthScheduleSave = new MonthSchedule { Days = new DaySchedule[] {one, two} };
             await _firebase.Child("schedule")
-                .PostAsync<MonthSchedule>(monthScheduleSave);
+                .PostAsync<MonthScheduleInsert>(insertionModel);
         }
 
+
+
+        // just for test only
         public void SetConnectionString(string connectionString)
         {
             _connectionString = connectionString;
         }
 
+        public async Task SendIntoFireDatabase(MonthScheduleBase monthScheduleBase)
+        {
+            _firebase = new FirebaseClient(_connectionString);
+
+            var insertionModel = monthScheduleBase.TransformIntoInsertObject();
+
+            await _firebase.Child("schedule")
+                .Child(monthScheduleBase.Name)
+                .PostAsync<MonthScheduleInsert>(insertionModel);
+        }
+
+        public async Task<MonthScheduleRead> GetMonthSchedule(string monthName)
+        {
+
+            _firebase = new FirebaseClient(_connectionString);
+            var result = await _firebase.Child("schedule")
+                        .Child(monthName)
+                        .OnceAsync<object>();
+
+            if (result.Count < 1)
+            {
+                throw new Exception("The entry was not found.");
+            }
+            
+            return this.GetReadModel(result);
+
+        }
+
+        private MonthScheduleRead GetReadModel(IReadOnlyCollection<FirebaseObject<object>> model)
+        {
+            var firstEntry = model.First();
+            var monthSchedule = JsonConvert.DeserializeObject<MonthScheduleRead>(firstEntry.Object.ToString());
+            monthSchedule.Id = firstEntry.Key;
+            return monthSchedule;
+        }
+
+        public async Task BookTime(string id, string monthName, int time)
+        {
+            _firebase = new FirebaseClient(_connectionString);
+
+            await _firebase.Child("schedule")
+                .Child(monthName)
+                .Child(id)
+                .Child("Days")
+                .Child("2018-07-09")
+                .PatchAsync("{\"19:00\": \"false\"}");
+        }
+        public async Task BookTime(BookTimeRequest req)
+        {
+            _firebase = new FirebaseClient(_connectionString);
+
+            var builder = new StringBuilder();
+            foreach (var slot in req.Timeslots)
+            {
+                builder.Append($"\"{slot.Key}\": \"{slot.Value}\"");
+                builder.Append(",");
+            }
+            builder.Remove(builder.Length - 1, 1);
+
+            //var toPatch = "{ "+ builder.ToString().TrimEnd(',') + " }";
+            var toPatch = "{ " + builder + " }";
+
+            await _firebase.Child("schedule")
+                .Child(req.GetMonthName())
+                .Child(req.Id)
+                .Child("Days")
+                .Child(req.Date)
+                .PatchAsync(toPatch);
+            //.PatchAsync($"{{ {segment}, \"16:00\": \"False\", \"15:00\": \"False\" }}");
+        }
+
     }
 }
+
