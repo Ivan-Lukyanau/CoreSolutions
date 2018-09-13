@@ -1,6 +1,7 @@
 ﻿using System;
 using System.Collections.Generic;
 using System.Linq;
+using System.Runtime.CompilerServices;
 using System.Text;
 using System.Threading.Tasks;
 using CoreFireAPI.Models;
@@ -80,6 +81,14 @@ namespace CoreFireAPI.BLL
             await _firebase.Child("schedule")
                 .Child(monthScheduleBase.Name)
                 .PostAsync<MonthScheduleInsert>(insertionModel);
+        }
+
+        public async Task<IEnumerable<string>> GetMonthSchedule()
+        {
+            _firebase = new FirebaseClient(_connectionString);
+            var months = await _firebase.Child("schedule").OrderByKey().OnceAsync<object>();
+
+            return (months.Select(e => e.Key));
         }
 
         public async Task<MonthScheduleRead> GetMonthSchedule(string monthName)

@@ -45,6 +45,11 @@ namespace CoreFireAPI
             {
                 app.UseHsts();
             }
+            app.UseCors(builder =>
+                builder.WithOrigins("http://localhost:8100")
+                    .AllowAnyOrigin()
+                    .AllowAnyHeader()
+                    .AllowAnyMethod());
 
             app.UseHttpsRedirection();
             app.UseMvc();

@@ -3,7 +3,6 @@ using System.Threading.Tasks;
 using CoreFireAPI.Models;
 using Firebase.Database;
 using Firebase.Database.Query;
-using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.Options;
 using Newtonsoft.Json;
 
@@ -14,13 +13,6 @@ namespace CoreFireAPI.DAL
         private readonly string _connectionString;
         private FirebaseClient _firebase;
 
-        //public CustomerRespository(IConfiguration configuration)
-        //{
-        //    Configuration = configuration;
-        //    _connectionString = Configuration.GetSection("ConnectionStrings:DefaultConnection").Value;
-        //    _firebase = new FirebaseClient(_connectionString);
-
-        //}
         public CustomerRespository(IOptions<FireConnection> fireConnection)
         {
             _connectionString = fireConnection.Value.DefaultConnection;

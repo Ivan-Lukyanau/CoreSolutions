@@ -34,6 +34,16 @@ namespace CoreFireAPI.Controllers
             await _firebaseDataService.SendIntoFireDatabase(monthSchedule);
         }
 
+        /// <summary>
+        /// Returns list of Month's we have in the schedule
+        /// </summary>
+        /// <returns></returns>
+        [HttpGet]
+        public async Task<IEnumerable<string>> Get()
+        {
+            return await _firebaseDataService.GetMonthSchedule();
+        }
+
         [HttpGet("{monthNumber}")]
         public async Task<MonthScheduleRead> Get(int monthNumber)
         {
