@@ -24,11 +24,11 @@ namespace CoreFireAPI.Controllers
         }
 
         [HttpPost]
-        public async void Post([FromBody] ScheduleCreate schedule)
+        public async Task Post([FromBody] ScheduleCreate schedule)
         {
             // init month schedule
             var days = this.ExtractDaysScheduleArray(schedule.WorkingDays);
-            var monthSchedule = new MonthScheduleBase { Days = days };
+            var monthSchedule = new MonthScheduleBase {Days = days};
 
             // save the schedule into db
             await _firebaseDataService.SendIntoFireDatabase(monthSchedule);
@@ -39,7 +39,7 @@ namespace CoreFireAPI.Controllers
         /// </summary>
         /// <returns></returns>
         [HttpGet]
-        public async Task<IEnumerable<string>> Get()
+        public async Task<IEnumerable<FirebaseDataService.WorkingMonth>> Get()
         {
             return await _firebaseDataService.GetMonthSchedule();
         }
@@ -54,12 +54,19 @@ namespace CoreFireAPI.Controllers
             return await _firebaseDataService.GetMonthSchedule(monthName);
         }
 
+        [HttpGet("{monthName}/{monthId}")]
+        public async Task<IEnumerable<string>> Get(string monthName, string monthId)
+        {
+            // getting data about month schedule
+            return await _firebaseDataService.GetWorkingDaysInMonthByKey(monthName, monthId);
+        }
+
         [HttpGet("{id}/{monthNumber}/{time}")]
         public async Task Get(string id, int monthNumber, int time)
         {
             // getting month name
             var monthName = this.GetMonthNameByMonthNumber(monthNumber);
-            
+
             // getting data about month schedule
             await _firebaseDataService.BookTime(id, monthName, time);
         }
@@ -68,6 +75,17 @@ namespace CoreFireAPI.Controllers
         public async Task Patch(BookTimeRequest req)
         {
             await _firebaseDataService.BookTime(req);
+        }
+
+        [HttpPut]
+        public async Task Put([FromBody] DaysInMonthUpdate updateModel)
+        {
+
+            await _firebaseDataService.UpdateWDForMonth(updateModel);
+        }
+
+        public class DaysInMonthUpdate : FirebaseDataService.WorkingMonth {
+            public IEnumerable<string> WorkingDays { get; set; }
         }
 
         private IEnumerable<DaySchedule> ExtractDaysScheduleArray(string[] days)

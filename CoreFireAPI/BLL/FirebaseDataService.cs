@@ -1,9 +1,12 @@
 ﻿using System;
 using System.Collections.Generic;
+using System.Diagnostics;
+using System.Globalization;
 using System.Linq;
 using System.Runtime.CompilerServices;
 using System.Text;
 using System.Threading.Tasks;
+using CoreFireAPI.Controllers;
 using CoreFireAPI.Models;
 using Firebase.Database;
 using Firebase.Database.Query;
@@ -77,20 +80,46 @@ namespace CoreFireAPI.BLL
             _firebase = new FirebaseClient(_connectionString);
 
             var insertionModel = monthScheduleBase.TransformIntoInsertObject();
-
+            var isAlreadyExists = await _firebase.Child("schedule")
+                .Child(insertionModel.Name).OnceAsync<object>();
+            if (isAlreadyExists.Count > 0)
+            {
+                throw new InvalidOperationException("Month is already exists. Just modify it.");
+            }
             await _firebase.Child("schedule")
                 .Child(monthScheduleBase.Name)
                 .PostAsync<MonthScheduleInsert>(insertionModel);
         }
 
-        public async Task<IEnumerable<string>> GetMonthSchedule()
+        public async Task<IEnumerable<WorkingMonth>> GetMonthSchedule()
         {
             _firebase = new FirebaseClient(_connectionString);
             var months = await _firebase.Child("schedule").OrderByKey().OnceAsync<object>();
 
-            return (months.Select(e => e.Key));
+            var monthsResult = months.Select(e =>
+            {
+                var m = JObject.Parse(e.Object.ToString());
+                return new WorkingMonth()
+                {
+                    Id = m.Properties().First().Name,
+                    Name = e.Key
+                    //MonthNumber = m.Property("MonthNumber")?.Value.ToString() ?? "Unavailable"};
+                };
+            });
+
+            return this.SortMonth(monthsResult);
         }
 
+        private IOrderedEnumerable<WorkingMonth> SortMonth(IEnumerable<WorkingMonth> months)
+        {
+            return months.OrderBy(s => DateTime.ParseExact(s.Name, "MMMM", new CultureInfo("ru")));
+        }
+
+        public class WorkingMonth
+        {
+            public string Id { get; set; }
+            public string Name { get; set; }
+        }
         public async Task<MonthScheduleRead> GetMonthSchedule(string monthName)
         {
 
@@ -106,6 +135,29 @@ namespace CoreFireAPI.BLL
             
             return this.GetReadModel(result);
 
+        }
+
+        public async Task<IEnumerable<string>> GetWorkingDaysInMonth(string monthName)
+        {
+            _firebase = new FirebaseClient(_connectionString);
+            var result = await _firebase.Child("schedule")
+                .Child(monthName)
+                .OnceAsync<object>();
+
+            return (result as IEnumerable<string>);
+        }
+
+        public async Task<IEnumerable<string>> GetWorkingDaysInMonthByKey(string monthName, string monthId)
+        {
+            _firebase = new FirebaseClient(_connectionString);
+
+            var result = await _firebase.Child("schedule")
+                .Child(monthName)
+                .Child(monthId)
+                .Child("Days")
+                .OnceAsync<object>();
+            
+            return result.Select(_ => _.Key);
         }
 
         private MonthScheduleRead GetReadModel(IReadOnlyCollection<FirebaseObject<object>> model)
@@ -151,6 +203,81 @@ namespace CoreFireAPI.BLL
             //.PatchAsync($"{{ {segment}, \"16:00\": \"False\", \"15:00\": \"False\" }}");
         }
 
+        public async Task UpdateWDForMonth(SchedulerController.DaysInMonthUpdate daysInMonthUpdate)
+        {
+            _firebase = new FirebaseClient(_connectionString);
+
+            var days = new Dictionary<string, Dictionary<string, bool>>();
+            
+            var daysAvailable = await _firebase.Child("schedule")
+                .Child(daysInMonthUpdate.Name)
+                .Child(daysInMonthUpdate.Id)
+                .Child("Days")
+                .OnceAsync<object>();
+
+            foreach (var dayAvailable in daysAvailable)
+            {
+                var timetable = JsonConvert.DeserializeObject<Dictionary<string, bool>>(dayAvailable.Object.ToString());
+                days.Add(dayAvailable.Key, timetable);
+            }
+
+            Debug.WriteLine("Hello!");
+
+            // if we face date that doesnt exists in collection
+            // we create new new DaySchedule model and add it into target before 
+            var daysToAdd = new Dictionary<string, Dictionary<string, bool>>();
+
+            foreach (var day in daysInMonthUpdate.WorkingDays)
+            {
+                if (!days.ContainsKey(day))
+                {
+                    // TODO something with initialization standart time slots
+                    // maybe we need inherited class from Dictionary to make it easier
+                    var timeslots = new DaySchedule(day).Timeslots;
+                    var timeslotDict = new Dictionary<string, bool>();
+                    timeslots.ToList().ForEach(e =>
+                    {
+                        var elTime = TimeSpan.FromHours(e.Time).ToString(@"hh\:mm");
+                        timeslotDict.Add(elTime, e.Available);
+                    });
+                    daysToAdd.Add(day, timeslotDict);
+                }
+            }
+            var daysToStay = new Dictionary<string, Dictionary<string, bool>>();
+            foreach (var day in days)
+            {
+                if (daysInMonthUpdate.WorkingDays.Contains(day.Key))
+                {
+                    daysToStay.Add(day.Key, day.Value);
+                }
+            }
+            // merge arrays
+            foreach (var dayToAdd in daysToAdd)
+            {
+                daysToStay.Add(dayToAdd.Key, dayToAdd.Value);
+            }
+
+            Debug.WriteLine("Hello!");
+
+            return;
+            //await _firebase.Child("schedule")
+            //    .Child(daysInMonthUpdate.Name)
+            //    .Child(daysInMonthUpdate.Id)
+            //    .Child("Days")
+            //    .PutAsync(putModel);
+
+            //daysInMonthUpdate.WorkingDays.ToList().ForEach(el =>
+            //{
+            //    var timeslotDict = new Dictionary<string, bool>();
+
+            //    el.Timeslots.ToList().ForEach(e =>
+            //    {
+            //        var elTime = TimeSpan.FromHours(e.Time).ToString(@"hh\:mm");
+            //        timeslotDict.Add(elTime, e.Available);
+            //    });
+            //    days.Add(el.Day, timeslotDict);
+            //});
+        }
     }
 }
 

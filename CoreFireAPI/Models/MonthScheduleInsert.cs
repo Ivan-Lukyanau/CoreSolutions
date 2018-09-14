@@ -8,6 +8,7 @@ namespace CoreFireAPI.Models
     public class MonthScheduleInsert
     {
         public string Name { get; set; }
+        public int? MonthNumber { get; set; }
         public Dictionary<
             string,
             Dictionary<string,bool>

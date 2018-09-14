@@ -27,6 +27,18 @@ namespace CoreFireAPI.Models
             }
         }
 
+        public int? MonthNumber
+        {
+            get
+            {
+                if (DateTime.TryParse(this.Days.First().Day, out DateTime dateResultParse))
+                    return dateResultParse.Month;
+                else
+                    return null;
+            }
+        }
+
+
         public IEnumerable<DaySchedule> Days { get; set; }
 
         public MonthScheduleInsert TransformIntoInsertObject()
@@ -46,6 +58,7 @@ namespace CoreFireAPI.Models
             return new MonthScheduleInsert()
             {
                 Name = this.Name,
+                //MonthNumber = this.MonthNumber,
                 Days = days
             };
         }
