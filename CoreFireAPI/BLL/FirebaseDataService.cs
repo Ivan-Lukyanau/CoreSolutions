@@ -202,7 +202,7 @@ namespace CoreFireAPI.BLL
                 .PatchAsync(toPatch);
             //.PatchAsync($"{{ {segment}, \"16:00\": \"False\", \"15:00\": \"False\" }}");
         }
-
+        // todo make a refactoring the method logic works but could be shrinked a bit
         public async Task UpdateWDForMonth(SchedulerController.DaysInMonthUpdate daysInMonthUpdate)
         {
             _firebase = new FirebaseClient(_connectionString);
@@ -220,8 +220,6 @@ namespace CoreFireAPI.BLL
                 var timetable = JsonConvert.DeserializeObject<Dictionary<string, bool>>(dayAvailable.Object.ToString());
                 days.Add(dayAvailable.Key, timetable);
             }
-
-            Debug.WriteLine("Hello!");
 
             // if we face date that doesnt exists in collection
             // we create new new DaySchedule model and add it into target before 
@@ -257,14 +255,11 @@ namespace CoreFireAPI.BLL
                 daysToStay.Add(dayToAdd.Key, dayToAdd.Value);
             }
 
-            Debug.WriteLine("Hello!");
-
-            return;
-            //await _firebase.Child("schedule")
-            //    .Child(daysInMonthUpdate.Name)
-            //    .Child(daysInMonthUpdate.Id)
-            //    .Child("Days")
-            //    .PutAsync(putModel);
+            await _firebase.Child("schedule")
+                .Child(daysInMonthUpdate.Name)
+                .Child(daysInMonthUpdate.Id)
+                .Child("Days")
+                .PutAsync(daysToStay);
 
             //daysInMonthUpdate.WorkingDays.ToList().ForEach(el =>
             //{
