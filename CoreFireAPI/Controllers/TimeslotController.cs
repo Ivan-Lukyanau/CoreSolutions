@@ -1,8 +1,7 @@
-﻿using System;
-using System.Collections.Generic;
-using System.Linq;
+﻿using System.Collections.Generic;
 using System.Threading.Tasks;
 using CoreFireAPI.BLL;
+using CoreFireAPI.Models.Time;
 using Microsoft.AspNetCore.Mvc;
 
 namespace CoreFireAPI.Controllers
@@ -18,34 +17,11 @@ namespace CoreFireAPI.Controllers
             _firebaseDataService = firebaseDataService;
         }
         [HttpGet("{monthName}/{monthId}/{date}")]
-        public async Task<Dictionary<string, bool>> Get(string monthName, string monthId, string date)
+        public async Task<IEnumerable<Timeslot>> Get(string monthName, string monthId, string date)
         {
-            return await _firebaseDataService.GetTimelotsForDay(monthName, monthId, date);
+            var result = await _firebaseDataService.GetTimelotsForDay(monthName, monthId, date);
+            return Timeslot.FromDictionary(result);
         }
 
-        //// GET: api/Timeslot/5
-        //[HttpGet("{id}", Name = "Get")]
-        //public string Get(int id)
-        //{
-        //    return "value";
-        //}
-
-        //// POST: api/Timeslot
-        //[HttpPost]
-        //public void Post([FromBody] string value)
-        //{
-        //}
-
-        //// PUT: api/Timeslot/5
-        //[HttpPut("{id}")]
-        //public void Put(int id, [FromBody] string value)
-        //{
-        //}
-
-        //// DELETE: api/ApiWithActions/5
-        //[HttpDelete("{id}")]
-        //public void Delete(int id)
-        //{
-        //}
     }
 }
