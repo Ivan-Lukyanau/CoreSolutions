@@ -25,6 +25,7 @@ namespace CoreFireAPI.BLL
         public FirebaseDataService(IOptions<FireConnection> fireConnection)
         {
             _connectionString = fireConnection.Value.DefaultConnection;
+            _firebase = new FirebaseClient(_connectionString);
         }
 
         public FirebaseDataService(string fireConnection)
@@ -58,7 +59,6 @@ namespace CoreFireAPI.BLL
         // deprecated
         public async Task SendIntoFireDatabase(IEnumerable<DaySchedule> monthSchedule)
         {
-            _firebase = new FirebaseClient(_connectionString);
             var monthScheduleSave = new MonthScheduleBase { Days = monthSchedule };
             // just for Keys test
             var insertionModel = monthScheduleSave.TransformIntoInsertObject();
@@ -77,8 +77,6 @@ namespace CoreFireAPI.BLL
 
         public async Task SendIntoFireDatabase(MonthScheduleBase monthScheduleBase)
         {
-            _firebase = new FirebaseClient(_connectionString);
-
             var insertionModel = monthScheduleBase.TransformIntoInsertObject();
             var isAlreadyExists = await _firebase.Child("schedule")
                 .Child(insertionModel.Name).OnceAsync<object>();
@@ -93,7 +91,6 @@ namespace CoreFireAPI.BLL
 
         public async Task<IEnumerable<WorkingMonth>> GetMonthSchedule()
         {
-            _firebase = new FirebaseClient(_connectionString);
             var months = await _firebase.Child("schedule").OrderByKey().OnceAsync<object>();
 
             var monthsResult = months.Select(e =>
@@ -122,8 +119,6 @@ namespace CoreFireAPI.BLL
         }
         public async Task<MonthScheduleRead> GetMonthSchedule(string monthName)
         {
-
-            _firebase = new FirebaseClient(_connectionString);
             var result = await _firebase.Child("schedule")
                         .Child(monthName)
                         .OnceAsync<object>();
@@ -139,7 +134,6 @@ namespace CoreFireAPI.BLL
 
         public async Task<IEnumerable<string>> GetWorkingDaysInMonth(string monthName)
         {
-            _firebase = new FirebaseClient(_connectionString);
             var result = await _firebase.Child("schedule")
                 .Child(monthName)
                 .OnceAsync<object>();
@@ -149,8 +143,6 @@ namespace CoreFireAPI.BLL
 
         public async Task<IEnumerable<string>> GetWorkingDaysInMonthByKey(string monthName, string monthId)
         {
-            _firebase = new FirebaseClient(_connectionString);
-
             var result = await _firebase.Child("schedule")
                 .Child(monthName)
                 .Child(monthId)
@@ -170,8 +162,6 @@ namespace CoreFireAPI.BLL
 
         public async Task BookTime(string id, string monthName, int time)
         {
-            _firebase = new FirebaseClient(_connectionString);
-
             await _firebase.Child("schedule")
                 .Child(monthName)
                 .Child(id)
@@ -181,8 +171,6 @@ namespace CoreFireAPI.BLL
         }
         public async Task BookTime(BookTimeRequest req)
         {
-            _firebase = new FirebaseClient(_connectionString);
-
             var builder = new StringBuilder();
             foreach (var slot in req.Timeslots)
             {
@@ -205,8 +193,6 @@ namespace CoreFireAPI.BLL
         // todo make a refactoring the method logic works but could be shrinked a bit
         public async Task UpdateWDForMonth(SchedulerController.DaysInMonthUpdate daysInMonthUpdate)
         {
-            _firebase = new FirebaseClient(_connectionString);
-
             var days = new Dictionary<string, Dictionary<string, bool>>();
             
             var daysAvailable = await _firebase.Child("schedule")
@@ -272,6 +258,15 @@ namespace CoreFireAPI.BLL
             //    });
             //    days.Add(el.Day, timeslotDict);
             //});
+        }
+
+
+        public async Task DeleteMonth(string monthName, string monthId)
+        {
+            await _firebase.Child("schedule")
+                .Child(monthName)
+                .Child(monthId)
+                .DeleteAsync();
         }
     }
 }

@@ -5,6 +5,7 @@ using System.Threading.Tasks;
 using CoreFireAPI.BLL;
 using CoreFireAPI.DAL;
 using CoreFireAPI.Models;
+using Firebase.Database;
 using Microsoft.AspNetCore.Builder;
 using Microsoft.AspNetCore.Hosting;
 using Microsoft.AspNetCore.HttpsPolicy;
