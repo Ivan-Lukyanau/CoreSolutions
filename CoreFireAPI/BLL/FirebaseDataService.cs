@@ -268,6 +268,26 @@ namespace CoreFireAPI.BLL
                 .Child(monthId)
                 .DeleteAsync();
         }
+
+        public async Task<Dictionary<string, bool>> GetTimelotsForDay(string monthName, string monthId, string date)
+        {
+            IReadOnlyCollection<FirebaseObject<object>> result = await _firebase.Child("schedule")
+                        .Child(monthName)
+                        .Child(monthId)
+                        .Child("Days")
+                        .Child(date)
+                        .OnceAsync<object>();
+            var timeslotDict = new Dictionary<string, bool>();
+            if (result != null)
+            {
+                foreach (var item in result)
+                {
+                    timeslotDict.Add(item.Key, (bool)item.Object);
+                }
+            }
+
+            return timeslotDict;
+        }
     }
 }
 

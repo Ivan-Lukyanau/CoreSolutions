@@ -1,6 +1,4 @@
-﻿using System.Collections.Generic;
-
-namespace CoreFireAPI.Models
+﻿namespace CoreFireAPI.Models
 {
     public class Timeslot
     {
