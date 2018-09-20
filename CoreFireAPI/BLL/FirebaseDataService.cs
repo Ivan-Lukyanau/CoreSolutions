@@ -172,9 +172,10 @@ namespace CoreFireAPI.BLL
         public async Task BookTime(BookTimeRequest req)
         {
             var builder = new StringBuilder();
+
             foreach (var slot in req.Timeslots)
             {
-                builder.Append($"\"{slot.Key}\": \"{slot.Value}\"");
+                builder.Append($"\"{slot.Time}\": \"{slot.Available}\"");
                 builder.Append(",");
             }
             builder.Remove(builder.Length - 1, 1);
@@ -282,7 +283,14 @@ namespace CoreFireAPI.BLL
             {
                 foreach (var item in result)
                 {
-                    timeslotDict.Add(item.Key, (bool)item.Object);
+                    try
+                    {
+                        timeslotDict.Add(item.Key, Boolean.Parse(item.Object.ToString()));
+                    }
+                    catch (Exception ex)
+                    {
+
+                    }
                 }
             }
 

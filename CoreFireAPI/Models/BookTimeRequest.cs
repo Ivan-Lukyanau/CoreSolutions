@@ -12,7 +12,9 @@ namespace CoreFireAPI.Models
         public string Date { get; set; }
         //public string Time { get; set; }
         //public bool Value { get; set; }
-        public Dictionary<string,bool> Timeslots { get; set; }
+        //public Dictionary<string,bool> Timeslots { get; set; }
+
+        public IEnumerable<Time.Timeslot> Timeslots { get; set; }
 
         public string GetMonthName()
         {
