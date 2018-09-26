@@ -8,6 +8,8 @@ using System.Text;
 using System.Threading.Tasks;
 using CoreFireAPI.Controllers;
 using CoreFireAPI.Models;
+using CoreFireAPI.Models.Client;
+using CoreFireAPI.Models.Time;
 using Firebase.Database;
 using Firebase.Database.Query;
 using Microsoft.Extensions.Options;
@@ -32,6 +34,43 @@ namespace CoreFireAPI.BLL
         {
             _connectionString = fireConnection;
 
+        }
+
+        public async Task<Dictionary<string, bool>> GetReservationsForDay(string monthName, string monthId, string date)
+        {
+            IReadOnlyCollection<FirebaseObject<object>> result = await _firebase.Child("reservation")
+                .Child(monthName)
+                .Child(monthId)
+                .Child("Days")
+                .Child(date)
+                .OnceAsync<object>();
+
+            var reservations = new List<ReservationInfoBase>();
+            var timeslotDict = new Dictionary<string, ClientInfoBase>();
+            if (result != null)
+            {
+                foreach (var item in result)
+                {
+                    try
+                    {
+                        var parsedObj = JObject.Parse(item.Object.ToString());
+                        reservations.Add(new ReservationInfoBase()
+                        {
+                            Id = item.Key,
+                            Time = parsedObj.Properties().FirstOrDefault().ToString(),
+                            ClientName = parsedObj.Properties().Last().ToString(),
+                            ClientPhone = parsedObj.Properties().Last().ToString(),
+                        });
+                        timeslotDict.Add(item.Key, JsonConvert.DeserializeObject<ClientInfoBase>(item.Object.ToString()));
+                    }
+                    catch (Exception ex)
+                    {
+                        Debug.WriteLine(ex.Message);
+                    }
+                }
+            }
+
+            return null;
         }
 
         // reinvent given the auth strategy in the future
@@ -169,6 +208,23 @@ namespace CoreFireAPI.BLL
                 .Child("2018-07-09")
                 .PatchAsync("{\"19:00\": \"false\"}");
         }
+
+        public async Task MakeReservation(TimeslotReservationDTO reservation)
+        {
+            dynamic client = new System.Dynamic.ExpandoObject();
+            client.clientName = "Ivan";
+            client.clientPhone = "291039623";
+            var postObject = new Dictionary<string, dynamic> {{reservation.Time, client}};
+            var dataString = JsonConvert.SerializeObject(postObject);
+
+            await _firebase.Child("reservation")
+                .Child(reservation.MonthName)
+                .Child(reservation.MonthId)
+                .Child("Days")
+                .Child(reservation.Day)
+                .PostAsync(dataString);
+        }
+
         public async Task BookTime(BookTimeRequest req)
         {
             var builder = new StringBuilder();

@@ -1,4 +1,5 @@
 ﻿using System;
+using System.Collections.Generic;
 using System.Diagnostics;
 using System.Globalization;
 using System.IO;
@@ -12,12 +13,27 @@ using Microsoft.Extensions.Options;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.IdentityModel.Protocols;
 using Moq;
+using Newtonsoft.Json;
 using Xunit;
 
 namespace CoreFireAPI.Tests
 {
     public class UnitTest1
     {
+        [Fact]
+        public void TestOpjectSerialization()
+        {
+            var time = "20:00";
+
+            dynamic client = new System.Dynamic.ExpandoObject();
+            client.clientName = "Ivan";
+            client.clientPhone = "291039623";
+
+            var postObject = new Dictionary<string, dynamic> {{time, client}};
+            var seriResult = JsonConvert.SerializeObject(postObject);
+
+            Debug.WriteLine("");
+        }
         [Fact]
         public void BuilderShouldReturnTheExpetedString()
         {
