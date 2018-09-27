@@ -19,7 +19,13 @@ using Newtonsoft.Json.Serialization;
 
 namespace CoreFireAPI.BLL
 {
-    public class FirebaseDataService
+    public interface IFirebaseDataService
+    {
+        Task<IEnumerable<ReservationInfoBase>> GetReservationsForDay(string monthName, string monthId, string date);
+        Task MakeReservation(TimeslotReservationDTO reservation);
+    }
+
+    public class FirebaseDataService : IFirebaseDataService
     {
         private string _connectionString;
         private FirebaseClient _firebase;
@@ -36,7 +42,7 @@ namespace CoreFireAPI.BLL
 
         }
 
-        public async Task<Dictionary<string, bool>> GetReservationsForDay(string monthName, string monthId, string date)
+        public async Task<IEnumerable<ReservationInfoBase>> GetReservationsForDay(string monthName, string monthId, string date)
         {
             IReadOnlyCollection<FirebaseObject<object>> result = await _firebase.Child("reservation")
                 .Child(monthName)
@@ -45,32 +51,26 @@ namespace CoreFireAPI.BLL
                 .Child(date)
                 .OnceAsync<object>();
 
-            var reservations = new List<ReservationInfoBase>();
-            var timeslotDict = new Dictionary<string, ClientInfoBase>();
-            if (result != null)
+            if (result == null)
             {
-                foreach (var item in result)
+                throw new Exception("Result is not defined!");
+            }
+            var resultSet = new List<ReservationInfoBase>();
+
+            foreach (var item in result)
+            {
+                var clientAndTime = JsonConvert
+                    .DeserializeObject<Dictionary<string, ClientInfoBase>>(item.Object.ToString()).FirstOrDefault();
+                resultSet.Add(new ReservationInfoBase()
                 {
-                    try
-                    {
-                        var parsedObj = JObject.Parse(item.Object.ToString());
-                        reservations.Add(new ReservationInfoBase()
-                        {
-                            Id = item.Key,
-                            Time = parsedObj.Properties().FirstOrDefault().ToString(),
-                            ClientName = parsedObj.Properties().Last().ToString(),
-                            ClientPhone = parsedObj.Properties().Last().ToString(),
-                        });
-                        timeslotDict.Add(item.Key, JsonConvert.DeserializeObject<ClientInfoBase>(item.Object.ToString()));
-                    }
-                    catch (Exception ex)
-                    {
-                        Debug.WriteLine(ex.Message);
-                    }
-                }
+                    Id = item.Key,
+                    Time = clientAndTime.Key,
+                    ClientName = clientAndTime.Value.ClientName,
+                    ClientPhone = clientAndTime.Value.ClientPhone
+                });
             }
 
-            return null;
+            return resultSet;
         }
 
         // reinvent given the auth strategy in the future
@@ -212,8 +212,8 @@ namespace CoreFireAPI.BLL
         public async Task MakeReservation(TimeslotReservationDTO reservation)
         {
             dynamic client = new System.Dynamic.ExpandoObject();
-            client.clientName = "Ivan";
-            client.clientPhone = "291039623";
+            client.clientName = reservation.ClientName;
+            client.clientPhone = reservation.ClientPhone;
             var postObject = new Dictionary<string, dynamic> {{reservation.Time, client}};
             var dataString = JsonConvert.SerializeObject(postObject);
 
@@ -225,6 +225,7 @@ namespace CoreFireAPI.BLL
                 .PostAsync(dataString);
         }
 
+        // TODO : Test it and change the logic of creating json serialized object through the dynamic as above
         public async Task BookTime(BookTimeRequest req)
         {
             var builder = new StringBuilder();

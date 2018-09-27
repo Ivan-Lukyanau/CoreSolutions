@@ -32,6 +32,7 @@ namespace CoreFireAPI
             services.Configure<FireConnection>(Configuration.GetSection("ConnectionStrings"));
             services.AddMvc().SetCompatibilityVersion(CompatibilityVersion.Version_2_1);
             services.AddTransient<ICustomerRepository, CustomerRespository>();
+            services.AddTransient<IFirebaseDataService, FirebaseDataService>();
             services.AddTransient<FirebaseDataService>();
         }
 

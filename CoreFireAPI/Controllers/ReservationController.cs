@@ -1,11 +1,17 @@
 ﻿using System;
 using System.Collections.Generic;
+using static System.Diagnostics.Debug;
 using System.Linq;
+using System.Net;
+using System.Threading;
+using System.Web.Http;
 using System.Threading.Tasks;
 using CoreFireAPI.BLL;
+using CoreFireAPI.Models.Client;
 using CoreFireAPI.Models.Time;
 using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Mvc;
+using Microsoft.AspNetCore.Mvc.WebApiCompatShim;
 
 namespace CoreFireAPI.Controllers
 {
@@ -13,9 +19,9 @@ namespace CoreFireAPI.Controllers
     [ApiController]
     public class ReservationController : ControllerBase
     {
-        private readonly FirebaseDataService _firebaseDataService;
+        private readonly IFirebaseDataService _firebaseDataService;
 
-        public ReservationController(FirebaseDataService firebaseDataService)
+        public ReservationController(IFirebaseDataService firebaseDataService)
         {
             _firebaseDataService = firebaseDataService;
         }
@@ -23,34 +29,31 @@ namespace CoreFireAPI.Controllers
         [HttpPost]
         public async Task Post([FromBody] TimeslotReservationDTO reservation)
         {
+            /*
+             if (!ModelState.IsValid)
+             {
+                return BadRequest(ModelState);
+             }
+             
+             */
             // ObjectResult
             await _firebaseDataService.MakeReservation(reservation);
         }
 
         [HttpGet("{monthName}/{monthId}/{date}")]
-        public async Task<IEnumerable<Timeslot>> Get(string monthName, string monthId, string date)
+        public async Task<ActionResult<IEnumerable<ReservationInfoBase>>> Get(string monthName, string monthId, string date)
         {
-            var result = await _firebaseDataService.GetReservationsForDay(monthName, monthId, date);
-            return Timeslot.FromDictionary(result);
+            try
+            {
+                return Ok(await _firebaseDataService.GetReservationsForDay(monthName, monthId, date));
+            }
+            catch (Exception e)
+            {
+                WriteLine(e);
+                return new InternalServerErrorResult();
+            }
         }
 
-        //// GET: api/Reservation/5
-        //[HttpGet("{id}", Name = "Get")]
-        //public string Get(int id)
-        //{
-        //    return "value";
-        //}
-
-        //// PUT: api/Reservation/5
-        //[HttpPut("{id}")]
-        //public void Put(int id, [FromBody] string value)
-        //{
-        //}
-
-        //// DELETE: api/ApiWithActions/5
-        //[HttpDelete("{id}")]
-        //public void Delete(int id)
-        //{
-        //}
     }
+
 }
