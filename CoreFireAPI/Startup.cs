@@ -31,6 +31,14 @@ namespace CoreFireAPI
         {
             services.Configure<FireConnection>(Configuration.GetSection("ConnectionStrings"));
             services.AddMvc().SetCompatibilityVersion(CompatibilityVersion.Version_2_1);
+            //services.AddMvcCore().AddDataAnnotations();
+
+            services.Configure<ApiBehaviorOptions>(options =>
+            {
+                //options.SuppressConsumesConstraintForFormFileParameters = true;
+                //options.SuppressInferBindingSourcesForParameters = true;
+                options.SuppressModelStateInvalidFilter = true;
+            });
             services.AddTransient<ICustomerRepository, CustomerRespository>();
             services.AddTransient<IFirebaseDataService, FirebaseDataService>();
             services.AddTransient<FirebaseDataService>();

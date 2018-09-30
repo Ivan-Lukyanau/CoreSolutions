@@ -1,5 +1,7 @@
 ﻿using System;
 using System.Collections.Generic;
+using System.ComponentModel.DataAnnotations;
+using System.Globalization;
 using static System.Diagnostics.Debug;
 using System.Linq;
 using System.Net;
@@ -11,6 +13,7 @@ using CoreFireAPI.Models.Client;
 using CoreFireAPI.Models.Time;
 using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Mvc;
+using Microsoft.AspNetCore.Mvc.ModelBinding;
 using Microsoft.AspNetCore.Mvc.WebApiCompatShim;
 
 namespace CoreFireAPI.Controllers
@@ -29,24 +32,25 @@ namespace CoreFireAPI.Controllers
         [HttpPost]
         public async Task Post([FromBody] TimeslotReservationDTO reservation)
         {
-            /*
-             if (!ModelState.IsValid)
-             {
-                return BadRequest(ModelState);
-             }
-             
-             */
-            // ObjectResult
+
             await _firebaseDataService.MakeReservation(reservation);
         }
 
         [HttpGet("{monthName}/{monthId}/{date}")]
-        public async Task<ActionResult<IEnumerable<ReservationInfoBase>>> Get(string monthName, string monthId, string date)
+        public async Task<ActionResult<IEnumerable<ReservationInfoBase>>> Get(
+            string monthName,
+            string monthId,
+            string date)
         {
             try
             {
+                if (ValidateParamsForReservationInfo(monthName, monthId, date) == false)
+                {
+                    WriteLine($"Model is not valid: monthName = {monthName}, monthId = {monthId}, date = {date}");
+                    return BadRequest("You've passed an incorrect request.");
+                }
                 return Ok(await _firebaseDataService.GetReservationsForDay(monthName, monthId, date));
-            }
+    }
             catch (Exception e)
             {
                 WriteLine(e);
@@ -54,6 +58,39 @@ namespace CoreFireAPI.Controllers
             }
         }
 
+        public static bool ValidateParamsForReservationInfo(string monthName, string monthId, string date)
+        {
+            if (monthName == null
+                || !DateTime.TryParseExact(
+                    monthName,
+                    "MMMM",
+                    CultureInfo.CreateSpecificCulture("ru"), DateTimeStyles.None,
+                    out var resultMonthParse)
+                || monthId == null
+                || monthId.Length < 1
+                || date == null 
+                ||!DateTime.TryParse(date, out var resultDateParse)
+            )
+            {
+                return false;
+            }
+
+            return true;
+        }
+
+    }
+
+
+    public class MonthInfoBase
+    {
+        public string MonthName { get; set; }
+        public string MonthId { get; set; }
+
+    }
+
+    public class GetReservation : MonthInfoBase
+    {
+        public string Date { get; set; }
     }
 
 }
