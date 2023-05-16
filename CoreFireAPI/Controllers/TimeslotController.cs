@@ -16,6 +16,7 @@ namespace CoreFireAPI.Controllers
         {
             _firebaseDataService = firebaseDataService;
         }
+
         [HttpGet("{monthName}/{monthId}/{date}")]
         public async Task<IEnumerable<Timeslot>> Get(string monthName, string monthId, string date)
         {

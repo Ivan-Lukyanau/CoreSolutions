@@ -2,17 +2,9 @@
 using System.Collections.Generic;
 using System.Diagnostics;
 using System.Globalization;
-using System.IO;
 using System.Linq;
 using System.Text;
-using CoreFireAPI.BLL;
 using CoreFireAPI.Models;
-using Microsoft.CodeAnalysis.Options;
-using Microsoft.Extensions.Configuration.Json;
-using Microsoft.Extensions.Options;
-using Microsoft.Extensions.DependencyInjection;
-using Microsoft.IdentityModel.Protocols;
-using Moq;
 using Newtonsoft.Json;
 using Xunit;
 

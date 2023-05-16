@@ -61,7 +61,7 @@ namespace CoreFireAPI.Tests
         }
 
         [Fact]
-        public void ShouldParseMonthNameIntoDateWithoutErrors()
+        public void ShouldParse_MonthName_Into_Date_WithoutErrors()
         {
             var monthName = "Октябрь";
 
