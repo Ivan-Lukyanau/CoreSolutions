@@ -1,12 +1,9 @@
-﻿using System;
-using System.Collections.Generic;
-using System.Diagnostics;
-using System.Globalization;
-using System.Linq;
+﻿using System.Collections.Generic;
 using System.Threading.Tasks;
 using CoreFireAPI.BLL;
+using CoreFireAPI.Extensions;
 using CoreFireAPI.Models;
-using Microsoft.AspNetCore.Http;
+using CoreFireAPI.Models.Reservation;
 using Microsoft.AspNetCore.Mvc;
 
 namespace CoreFireAPI.Controllers
@@ -39,7 +36,7 @@ namespace CoreFireAPI.Controllers
         /// </summary>
         /// <returns></returns>
         [HttpGet]
-        public async Task<IEnumerable<FirebaseDataService.WorkingMonth>> Get()
+        public async Task<IEnumerable<WorkingMonth>> Get()
         {
             return await _firebaseDataService.GetMonthSchedule();
         }
@@ -47,8 +44,7 @@ namespace CoreFireAPI.Controllers
         [HttpGet("{monthNumber}")]
         public async Task<MonthScheduleRead> Get(int monthNumber)
         {
-            // getting month name
-            var monthName = this.GetMonthNameByMonthNumber(monthNumber);
+            var monthName = monthNumber.GetMonthNameByMonthNumber();
 
             // getting data about month schedule
             return await _firebaseDataService.GetMonthSchedule(monthName);
@@ -64,8 +60,7 @@ namespace CoreFireAPI.Controllers
         [HttpGet("{id}/{monthNumber}/{time}")]
         public async Task Get(string id, int monthNumber, int time)
         {
-            // getting month name
-            var monthName = this.GetMonthNameByMonthNumber(monthNumber);
+            var monthName = monthNumber.GetMonthNameByMonthNumber();
 
             // getting data about month schedule
             await _firebaseDataService.BookTime(id, monthName, time);
@@ -84,21 +79,12 @@ namespace CoreFireAPI.Controllers
             await _firebaseDataService.UpdateWDForMonth(updateModel);
         }
 
-        public class DaysInMonthUpdate : FirebaseDataService.WorkingMonth {
-            public IEnumerable<string> WorkingDays { get; set; }
-        }
-
         private IEnumerable<DaySchedule> ExtractDaysScheduleArray(string[] days)
         {
             foreach (var day in days)
             {
                 yield return new DaySchedule(day);
             }
-        }
-
-        private string GetMonthNameByMonthNumber(int number)
-        {
-            return CultureInfo.CreateSpecificCulture("ru").DateTimeFormat.GetMonthName(number);
         }
 
     }

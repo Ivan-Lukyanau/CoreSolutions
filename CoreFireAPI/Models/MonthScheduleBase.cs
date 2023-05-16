@@ -58,8 +58,9 @@ namespace CoreFireAPI.Models
             return new MonthScheduleInsert()
             {
                 Name = this.Name,
-                //MonthNumber = this.MonthNumber,
-                Days = days
+                Days = days,
+                MonthNumber = DateTime.Parse(Days.First()?.Day).Month,
+                MonthRaw = $"{DateTime.Parse(Days.First()?.Day).Year}-{DateTime.Parse(Days.First()?.Day).Month}"
             };
         }
     }

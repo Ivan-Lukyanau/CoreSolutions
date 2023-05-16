@@ -1,21 +1,19 @@
 ﻿using System;
 using System.Collections.Generic;
-using System.Diagnostics;
 using System.Globalization;
 using System.Linq;
-using System.Runtime.CompilerServices;
 using System.Text;
 using System.Threading.Tasks;
 using CoreFireAPI.Controllers;
 using CoreFireAPI.Models;
 using CoreFireAPI.Models.Client;
+using CoreFireAPI.Models.Reservation;
 using CoreFireAPI.Models.Time;
 using Firebase.Database;
 using Firebase.Database.Query;
 using Microsoft.Extensions.Options;
 using Newtonsoft.Json;
 using Newtonsoft.Json.Linq;
-using Newtonsoft.Json.Serialization;
 
 namespace CoreFireAPI.BLL
 {
@@ -23,6 +21,12 @@ namespace CoreFireAPI.BLL
     {
         Task<IEnumerable<ReservationInfoBase>> GetReservationsForDay(string monthName, string monthId, string date);
         Task MakeReservation(TimeslotReservationDTO reservation);
+        Task UpdateTimeAvailabilityForDay(
+            string monthName,
+            string monthId,
+            string day,
+            string time,
+            bool availability);
     }
 
     public class FirebaseDataService : IFirebaseDataService
@@ -135,11 +139,13 @@ namespace CoreFireAPI.BLL
             var monthsResult = months.Select(e =>
             {
                 var m = JObject.Parse(e.Object.ToString());
+                var item = m.Properties().First();
                 return new WorkingMonth()
                 {
-                    Id = m.Properties().First().Name,
-                    Name = e.Key
-                    //MonthNumber = m.Property("MonthNumber")?.Value.ToString() ?? "Unavailable"};
+                    Id = item.Name,
+                    Name = e.Key,
+                    MonthRaw = item.Value.SelectToken("MonthRaw").Value<string>(),
+                    Published = item.Value.SelectToken("Published")?.Value<bool>() ?? true
                 };
             });
 
@@ -149,12 +155,6 @@ namespace CoreFireAPI.BLL
         private IOrderedEnumerable<WorkingMonth> SortMonth(IEnumerable<WorkingMonth> months)
         {
             return months.OrderBy(s => DateTime.ParseExact(s.Name, "MMMM", new CultureInfo("ru")));
-        }
-
-        public class WorkingMonth
-        {
-            public string Id { get; set; }
-            public string Name { get; set; }
         }
         public async Task<MonthScheduleRead> GetMonthSchedule(string monthName)
         {
@@ -249,7 +249,7 @@ namespace CoreFireAPI.BLL
             //.PatchAsync($"{{ {segment}, \"16:00\": \"False\", \"15:00\": \"False\" }}");
         }
         // todo make a refactoring the method logic works but could be shrinked a bit
-        public async Task UpdateWDForMonth(SchedulerController.DaysInMonthUpdate daysInMonthUpdate)
+        public async Task UpdateWDForMonth(DaysInMonthUpdate daysInMonthUpdate)
         {
             var days = new Dictionary<string, Dictionary<string, bool>>();
             
@@ -305,6 +305,13 @@ namespace CoreFireAPI.BLL
                 .Child("Days")
                 .PutAsync(daysToStay);
 
+            // update Published valued for Month schedule
+            await _firebase.Child("schedule")
+                .Child(daysInMonthUpdate.Name)
+                .Child(daysInMonthUpdate.Id)
+                .Child("Published")
+                .PutAsync(daysInMonthUpdate.Published);
+
             //daysInMonthUpdate.WorkingDays.ToList().ForEach(el =>
             //{
             //    var timeslotDict = new Dictionary<string, bool>();
@@ -316,6 +323,30 @@ namespace CoreFireAPI.BLL
             //    });
             //    days.Add(el.Day, timeslotDict);
             //});
+        }
+
+        public async Task UpdateTimeAvailabilityForDay(
+            string monthName,
+            string monthId,
+            string day,
+            string time,
+            bool availability)
+        {
+            //var dayInsert = new Dictionary<string, bool>
+            //{
+            //    { time, availability }
+            //};
+
+            //var dayInsert = $"\"{time}\": \"{availability}\"";
+            //var toPatch = "{ " + dayInsert + " }";
+
+            await _firebase.Child("schedule")
+                .Child(monthName)
+                .Child(monthId)
+                .Child("Days")
+                .Child(day)
+                .Child(time)
+                .PutAsync(availability);
         }
 
 
